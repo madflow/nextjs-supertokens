@@ -1,0 +1,53 @@
+services:
+
+  # https://hub.docker.com/_/postgres/
+  postgres:
+    image: "postgres:17-alpine"
+    command: "postgres -c log_statement=all"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    ports:
+      - "5432:5432"
+
+  # https://github.com/supertokens/supertokens-docker-postgresql
+  supertokens:
+    image: registry.supertokens.io/supertokens/supertokens-postgresql
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 3567:3567
+    environment:
+      DISABLE_TELEMETRY: true
+      POSTGRESQL_CONNECTION_URI: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}"
+      POSTGRESQL_TABLE_SCHEMA: "auth"
+    healthcheck:
+      test: >
+        bash -c 'exec 3<>/dev/tcp/127.0.0.1/3567 && echo -e "GET /hello HTTP/1.1\r\nhost: 127.0.0.1:3567\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "Hello"'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+
+volumes:
+  pg-data:
+    driver: local
