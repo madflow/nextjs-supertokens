@@ -14,9 +14,11 @@ This project uses a [Turborepo](https://turbo.build/) monorepo structure for man
 
 - Next.js 15 app (App Router)
 - SuperTokens integration (Email/Password, session management, user roles, dashboard)
+- Email verification is enforced for all users (using SuperTokens' EmailVerification recipe in `REQUIRED` mode)
 - SuperTokens dashboard and user roles are configured and enabled
 - PostgreSQL as the SuperTokens storage backend
 - Docker Compose for local development
+- Mailpit SMTP testing server for viewing outgoing emails (see below)
 - PGAdmin for database inspection
 - Example of protected API routes and client-side authentication
 - Managed as a monorepo using Turborepo
@@ -41,6 +43,16 @@ This dashboard allows you to view users, manage user roles, and inspect authenti
 
 ---
 
+## Mailpit SMTP Testing Server
+
+This project includes [Mailpit](https://mailpit.axllent.org/) via Docker Compose for testing email flows (such as verification emails) in development.
+
+- Mailpit Web UI: [http://localhost:8025](http://localhost:8025)
+- SMTP server: `localhost:1025`
+- See the `docker-compose.yml` file for configuration details.
+
+---
+
 ## Getting Started
 
 ### 1. Clone the repository
@@ -60,7 +72,7 @@ cp .env.dist .env
 
 The default values are suitable for local development. You can adjust `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` if desired.
 
-### 3. Start the backend services (PostgreSQL, SuperTokens, PGAdmin)
+### 3. Start the backend services (PostgreSQL, SuperTokens, Mailpit, PGAdmin)
 
 ```bash
 docker-compose up --build
@@ -69,6 +81,7 @@ docker-compose up --build
 - PostgreSQL: `localhost:5432`
 - SuperTokens core: `localhost:3567`
 - PGAdmin UI: `localhost:5050` (default login: `admin@example.com` / `admin`)
+- Mailpit UI: `localhost:8025` (use to view test emails)
 
 ### 4. Install dependencies (in a separate terminal)
 
@@ -88,7 +101,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## How It Works
 
-- Authentication: SuperTokens is configured for email/password login and session management. The backend (API routes) and frontend (React components) are protected using SuperTokens middleware and providers.
+- Authentication: SuperTokens is configured for email/password login, **required email verification**, and session management. The backend (API routes) and frontend (React components) are protected using SuperTokens middleware and providers.
 - Protected Routes: `/private` and `/api/private` require authentication. Public routes are accessible to everyone.
 - Database: The PostgreSQL database is initialized with an `auth` schema (see `docker/initdb/001-auth.sql`). SuperTokens stores user and session data in this schema.
 - PGAdmin: Used for inspecting the database during development.
@@ -98,7 +111,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see the app.
 ## Project Structure
 
 - `apps/web` — Next.js application
-- `docker-compose.yml` — Defines PostgreSQL, SuperTokens, and PGAdmin services
+- `docker-compose.yml` — Defines PostgreSQL, SuperTokens, Mailpit, and PGAdmin services
 - `docker/initdb/001-auth.sql` — Initializes the PostgreSQL `auth` schema
 - `packages/` — Shared configs (TypeScript, ESLint)
 
