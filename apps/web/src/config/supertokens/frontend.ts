@@ -1,6 +1,7 @@
 import "client-only";
 import EmailPasswordReact from "supertokens-auth-react/recipe/emailpassword";
-import SessionReact from "supertokens-auth-react/recipe/session";
+import Session from "supertokens-auth-react/recipe/session";
+import EmailVerification from "supertokens-auth-react/recipe/emailverification";
 import { appInfo } from "./appInfo";
 import type { useRouter } from "next/navigation";
 import type { SuperTokensConfig } from "supertokens-auth-react/lib/build/types";
@@ -19,7 +20,13 @@ export function setRouter(
 export const frontendConfig = (): SuperTokensConfig => {
   return {
     appInfo,
-    recipeList: [EmailPasswordReact.init(), SessionReact.init()],
+    recipeList: [
+      EmailPasswordReact.init(),
+      EmailVerification.init({
+        mode: "REQUIRED",
+      }),
+      Session.init(),
+    ],
     useShadowDom: false,
     windowHandler: (original) => ({
       ...original,

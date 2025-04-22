@@ -4,8 +4,11 @@ import { env } from "../environment";
 import SuperTokens from "supertokens-node";
 import Dashboard from "supertokens-node/recipe/dashboard";
 import UserRoles from "supertokens-node/recipe/userroles";
-import EmailPasswordNode from "supertokens-node/recipe/emailpassword";
+import EmailPassword from "supertokens-node/recipe/emailpassword";
+import EmailVerification from "supertokens-node/recipe/emailverification";
 import SessionNode from "supertokens-node/recipe/session";
+import { SMTPService } from "supertokens-node/recipe/emailpassword/emaildelivery";
+import { SMTPService as EmailVerificationSMTPService } from "supertokens-node/recipe/emailverification/emaildelivery";
 import type { TypeInput } from "supertokens-node/types";
 import { appInfo } from "@/config/supertokens/appInfo";
 
@@ -20,7 +23,29 @@ const SupertokensBackendInfoSchema = z.object({
     .default(() => (env.isProduction ? "" : "secret-api-key")),
 });
 
+const SupertokenSmtpInfoSchema = z.object({
+  SUPERTOKENS_SMTP_HOST: z
+    .string()
+    .nonempty()
+    .default(() => (env.isProduction ? "" : "localhost")),
+  SUPERTOKENS_SMTP_PORT: z
+    .number()
+    .default(() => (env.isProduction ? 465 : 1025)),
+});
+
 const backendInfo = SupertokensBackendInfoSchema.parse(process.env);
+
+const smtpInfo = SupertokenSmtpInfoSchema.parse(process.env);
+
+const smtpSettings = {
+  host: smtpInfo.SUPERTOKENS_SMTP_HOST,
+  port: smtpInfo.SUPERTOKENS_SMTP_PORT,
+  from: {
+    name: appInfo.appName,
+    email: "supertokens@example.com",
+  },
+  password: "supertokens",
+};
 
 export const backendConfig = (): TypeInput => {
   return {
@@ -31,7 +56,19 @@ export const backendConfig = (): TypeInput => {
     },
     appInfo,
     recipeList: [
-      EmailPasswordNode.init(),
+      EmailPassword.init({
+        emailDelivery: {
+          service: new SMTPService({
+            smtpSettings,
+          }),
+        },
+      }),
+      EmailVerification.init({
+        mode: "REQUIRED",
+        emailDelivery: {
+          service: new EmailVerificationSMTPService({ smtpSettings }),
+        },
+      }),
       SessionNode.init(),
       Dashboard.init(),
       UserRoles.init(),
